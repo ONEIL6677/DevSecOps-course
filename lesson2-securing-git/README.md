@@ -181,7 +181,7 @@ gitleaks detect --source . --log-opts="--since=2024-01-01"
 
 **What it is:** Running Gitleaks automatically on every push or pull request, so leaked secrets are caught in CI even if a local hook was skipped or bypassed.
 
-Example workflow file (`.github/workflows/gitleaks.yml`):
+>Example workflow file (`.github/workflows/gitleaks.yml`):
 ```yaml
 name: Gitleaks Secret Scan
 
@@ -285,7 +285,7 @@ touch .github/CODEOWNERS
 ```
 
 >Example content:
-```
+```bash
 # Default owners for everything in the repo
 *                   @oneil-kimbi
 
@@ -306,7 +306,7 @@ Verify GitHub recognizes it correctly by checking a pull request's "Reviewers" s
 
 **What it is:** GitHub's built-in tool that automatically scans your dependencies for known vulnerabilities and opens pull requests to update them.
 
-Create the config file:
+>Create the config file:
 ```bash
 mkdir -p .github
 ```
@@ -314,7 +314,7 @@ mkdir -p .github
 touch .github/dependabot.yml
 ```
 
-Example content (Go modules + GitHub Actions, checked weekly):
+>Example content (Go modules + GitHub Actions, checked weekly):
 ```yaml
 version: 2
 updates:
@@ -329,12 +329,12 @@ updates:
       interval: "weekly"
 ```
 
-Manually trigger a Dependabot check via the CLI:
+>Manually trigger a Dependabot check via the CLI:
 ```bash
 gh api repos/:owner/:repo/dependabot/updates -X POST
 ```
 
-List currently open Dependabot alerts:
+>List currently open Dependabot alerts:
 ```bash
 gh api repos/:owner/:repo/dependabot/alerts
 ```

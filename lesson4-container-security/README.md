@@ -1,0 +1,354 @@
+# Securing Containers
+
+This repository is a **hands-on, beginner-friendly guide** to securing containers.
+
+We intentionally start with **insecure defaults**, then **progressively harden**
+the container so each concept builds naturally on the previous one.
+
+---
+
+## What You Will Learn
+
+- Why running containers as **root** is dangerous
+- How to run containers as a **non-root user**
+- Why `.dockerignore` is critical
+- How **multi-stage builds** reduce attack surface
+- Why **distroless images** are more secure
+- How to **harden containers at runtime**
+
+---
+
+## Repository Structure
+
+```text
+sample-app/
+├── app.js
+├── package.json
+└── README.md
+```
+
+---
+
+## Sample Application
+
+We use a **very small Node.js application** so the focus stays on
+**container behavior and security**, not application complexity.
+
+The app prints the **user ID** running inside the container, which makes
+root vs non-root immediately visible.
+
+---
+
+## STEP 1: Insecure Container
+
+This is how many people **first learn Docker**.
+It works, but it is **not safe for production**.
+
+---
+
+### Dockerfile
+
+```dockerfile
+FROM node:25          # base image node version 25 and above
+
+WORKDIR /app          # creating work directory call app
+COPY . .              # copy project files to app directory (app.js and package.json)
+
+RUN npm install       # builds the app
+
+EXPOSE 3000           # exposes the app on port 3000(inside the container)
+CMD ["npm", "start"]  # starts the app
+```
+
+---
+### build and run image
+```bash
+docker build -t insecureimage .
+```
+```bash
+docker run -p 3000:3000 insecureimage
+```
+> open another tab and run the following command
+```bash
+curl localhost:3000
+```
+or paste `localhost:3000` in your browser
+
+### output:
+Hello a nodejs container from kimbicodes accademy 👋
+Hostname: ....
+User ID: 0%
+👉 **User ID 0 means root**.
+
+### What’s Wrong Here?
+
+| Issue | Why It’s a Problem |
+|------|-------------------|
+| Runs as root (User ID %0)| App compromise = full container control |
+| Single-stage build | Build tools stay in runtime |
+| Copies everything | Secrets & junk may leak |
+| Writable filesystem | Easy persistence |
+| No limits | Container can impact host |
+
+### run the container in interactive mode
+```bash
+docker run -it insecureimage sh
+```
+>inside the container if you run the command below you will see that the container is running as root user
+```bash
+id
+```
+
+## STEP 2: Run as Non-Root User (Reduce Blast Radius)
+
+Before optimizing images, the **first real security fix** is to
+**stop running applications as root**.
+
+### Why Non-Root Matters
+
+If an attacker exploits your app:
+- Root user → full container control
+- Non-root user → **limited permissions**
+
+This significantly reduces damage.
+
+---
+
+### Dockerfile.nonroot
+
+```dockerfile
+FROM node:25
+
+WORKDIR /app
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+COPY . .
+RUN npm install
+
+# Switch to non-root user
+USER appuser  # till here the command were executed by root user but from here the commands are ecuted
+              #  byregular user `appuser`
+
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+---
+
+### Build & Run (Non-Root)
+
+```bash
+docker build -f Dockerfile -t nonroot-app .
+```
+```bash
+docker run -p 3000:3000 nonroot-app
+```
+
+> open another tab and run the following command
+```bash
+curl localhost:3000
+```
+or paste `localhost:3000` in your browser
+
+### output:
+Hello a nodejs container from kimbicodes accademy 👋
+Hostname: ....
+User ID: 1000
+
+👉 The app now runs as a **non-root user**.
+
+⚠️ Still not secure:
+- Image is large
+- Build tools remain
+- OS utilities exist
+
+---
+
+## STEP 3: Add `.dockerignore` 
+
+Now that we fixed **who runs the app**, we fix **what gets copied**.
+
+### Why `.dockerignore` Is Important
+
+Without it:
+- `.git` history gets baked in
+- `.env` files may leak secrets
+- `node_modules` bloats images
+
+---
+
+### create a `.dockerignore` file and paste the content bellow inside
+
+```dockerignore
+.git         
+.gitignore    # everything in .gitignore file
+node_modules  # node modules
+.env          # all .env files
+Dockerfile*   # everything inside the docker file
+.md           # all .dm files
+```
+
+---
+
+### ✅ Benefits
+
+| Benefit | Why It Matters |
+|------|----------------|
+| Smaller image | Faster builds, fewer CVEs |
+| No secrets | Prevents accidental leaks |
+| Clean context | Easier security review |
+
+---
+
+## STEP 4: Multi-Stage Builds (Reduce Attack Surface)
+
+Next, we separate **build-time** and **runtime** concerns.
+
+### What Multi-Stage Builds Do
+
+- Build app in one image
+- Run app in another
+- Copy only what is needed
+
+---
+
+### Dockerfile.multistage
+
+```dockerfile
+# -------- Build Stage --------
+FROM node:25 AS builder
+
+WORKDIR /build
+COPY package.json ./
+RUN npm install
+COPY . .
+
+# -------- Runtime Stage --------
+FROM node:25-slim
+
+WORKDIR /app
+COPY --from=builder /build/app.js ./app.js
+COPY --from=builder /build/node_modules ./node_modules
+
+EXPOSE 3000
+CMD ["node", "app.js"]
+```
+
+---
+
+### Improvements
+
+- Smaller runtime image
+- Fewer tools for attackers
+- Cleaner separation
+
+---
+
+## STEP 5: Distroless Images (Minimal & Secure)
+
+Now we remove **almost the entire operating system**.
+
+### Why Distroless Works
+
+Distroless images have:
+- No shell
+- No package manager
+- No OS tools
+
+Attackers have very little to work with.
+
+---
+>still yet the image is still big if you run the command bellow you will notice there are packages we dont need in this container eg apt
+```bash
+docker run -it multistageimage sh
+```
+>then to verify run apt
+```bash
+apt
+```
+>we do not need unecesary modules in the image our nex topic is the solution
+
+### Dockerfile (Multi-Stage + Distroless)
+
+```dockerfile
+# -------- Build Stage --------
+FROM node:25 AS builder
+
+WORKDIR /build
+COPY package.json ./
+RUN npm install
+COPY . .
+
+# -------- Runtime Stage --------
+FROM gcr.io/distroless/nodejs20-debian12
+
+WORKDIR /app
+COPY --from=builder /build/app.js ./app.js
+COPY --from=builder /build/node_modules ./node_modules
+
+EXPOSE 3000
+CMD ["app.js"]
+```
+
+---
+
+### Run (Distroless)
+### build and run image
+```bash
+docker build -t destrolessimage .
+```
+```bash
+docker run -p 3000:3000 destrolessimage
+```
+> open another tab and run the following command
+```bash
+curl localhost:3000
+```
+or paste `localhost:3000` in your browser
+
+### output:
+Hello a nodejs container from kimbicodes accademy 👋
+Hostname: ....
+User ID: 65532
+
+👉 Non-root by default, no shell available.
+
+---
+
+## STEP 6: Harden the Runtime (Defense in Depth)
+
+Even secure images need runtime protection.
+
+---
+
+### Hardened Run Command
+
+```bash
+docker run \
+  --read-only \                        # read only process
+  --tmpfs /tmp \                       # 
+  --cap-drop ALL \                     #
+  --security-opt no-new-privileges \
+  --pids-limit 100 \                   # limit the number of proceses
+  --memory 256m \
+  --cpus 0.5 \
+  -p 3000:3000 \
+  secure-app                            # image name
+```
+
+---
+
+## Final Takeaway
+
+> **Secure container = Secure image + Hardened runtime**
+
+Fix:
+1. Who runs the app
+2. What goes into the image
+3. What stays in the image
+4. What tools exist
+5. What the app can do at runtime
+
+---

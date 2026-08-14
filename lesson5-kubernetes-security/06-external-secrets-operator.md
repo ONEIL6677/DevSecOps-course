@@ -54,7 +54,7 @@ helm repo update
 
 Verify:
 
-```
+```bash
 kubectl get pods -n external-secrets
 ```
 
@@ -97,7 +97,7 @@ EOF
 
 Expose Vault:
 
-```
+```bash
 kubectl port-forward -n vault deploy/vault 8200:8200
 ```
 
@@ -183,7 +183,7 @@ EOF
 
 Verify:
 
-```
+```bash
 kubectl get secrets -n payments
 ```
 
@@ -206,7 +206,7 @@ env:
 
 ## Cleanup
 
-```
+```bash
 kind delete cluster --name k8s-security
 ```
 ---

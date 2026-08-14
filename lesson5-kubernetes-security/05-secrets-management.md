@@ -22,7 +22,7 @@ kubectl create secret generic db-secret \
 
 Verify:
 
-```
+```bash
 kubectl get secrets -n dev
 ```
 

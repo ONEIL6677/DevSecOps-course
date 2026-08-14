@@ -18,15 +18,17 @@ Namespaces help with:
 
 Create namespaces for teams/projects:
 
+```bash
+kubectl create ns payments
 ```
-kubectl create namespace payments
-kubectl create namespace search
+```bash
+kubectl create ns search
 ```
 
 Verify:
 
-```
-kubectl get namespaces
+```bash
+kubectl get ns
 ```
 
 ---
@@ -35,20 +37,22 @@ kubectl get namespaces
 
 Create a simple nginx deployment in `payments`:
 
-```
+```bash
 kubectl create deployment nginx-payments --image=nginx -n payments
 ```
 
 Create the same in `search`:
 
-```
+```bash
 kubectl create deployment nginx-search --image=nginx -n search
 ```
 
 Verify:
 
-```
+```bash
 kubectl get pods -n payments
+```
+```bash
 kubectl get pods -n search
 ```
 

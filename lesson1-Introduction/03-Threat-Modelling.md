@@ -4,7 +4,7 @@
 
 ## What Is Threat Modeling
 
-Threat modeling is a structured process for identifying, understanding, and mitigating potential security threats to a system — **before** it's built, not after. It answers a simple question early: *"What could go wrong here, and what are we going to do about it?"*
+Threat modeling is a structured process for identifying, understanding, and mitigating potential security threats to a system **before** it's built, not after. It answers a simple question early: *"What could go wrong here, and what are we going to do about it?"*
 
 In DevSecOps, threat modeling is the earliest possible form of "shifting left" — it happens during design and planning, before a single line of code is written, so security is designed into the architecture rather than patched on afterward.
 

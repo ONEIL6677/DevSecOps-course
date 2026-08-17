@@ -1,4 +1,4 @@
-# DevSecOps-Zero-to-Hero
+# DevSecOps Course
 
 ## Lesson 1: The Mindset Shift & Threat Modeling
 
